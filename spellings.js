@@ -1,4 +1,4 @@
-import spellings from './words.json';
+import spellings from './words.js';
 let wordstodo = spellings.spell2;
 
 
