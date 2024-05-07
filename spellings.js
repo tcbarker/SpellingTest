@@ -18,23 +18,25 @@ function getscores(){
 }
 
 function getwordscoredata(key, val){
+    if(val===undefined){throw new Error("passed undefined score word");}
     let correct = 0;
     let wrong = 0;
-    let rightlasttime = true;//make wronglasttime todo
-    let correcttime = 0;
-    if(val.correct!==undefined){
-        correct = val.correct.length;
-        correcttime = val.correct[val.correct.length-1];
-    }
+    let wronglasttime = true;
+    let lastseen = 0;
     if(val.wrong!==undefined){
         wrong = val.wrong.length;
-        let wrongtime = val.wrong[val.wrong.length-1];
-        if(wrongtime>correcttime){
-            rightlasttime = false;
+        lastseen = val.wrong[val.wrong.length-1];
+    }
+    if(val.correct!==undefined){
+        correct = val.correct.length;
+        const correcttime = val.correct[val.correct.length-1];
+        if(lastseen<correcttime){
+            wronglasttime = false;
+            lastseen = correcttime;
         }
     }
     const total = correct+wrong;
-    return{ word:key, correct, wrong, total, percentage:(correct/total*100), rightlasttime };
+    return{ word:key, correct, wrong, total, percentage:(correct/total*100), wronglasttime, lastseen };
 }
 
 
@@ -48,14 +50,14 @@ function displayscoreshtml(){
 
     //sort it, worst at top
     scorearray.sort( (a,b) => {//neg=a first, pos=b first
-        if(!a.rightlasttime){
-            if(!b.rightlasttime){
+        if(a.wronglasttime){
+            if(b.wronglasttime){
                 return a.percentage-b.percentage;//compare : a-b = lower numbers first
             } else {
                 return -1;//a first
             }
         } else {
-            if(!b.rightlasttime){
+            if(b.wronglasttime){
                 return 1;//b first
             } else {
                 return a.percentage-b.percentage;//compare
@@ -66,7 +68,7 @@ function displayscoreshtml(){
     let htmltext = "<div>";
     scorearray.forEach( element => {
         htmltext+=`<div>${element.word} `;
-        htmltext+=`${element.percentage}% ${element.rightlasttime?"GREAT!":"Got wrong last time..."}`;
+        htmltext+=`${element.percentage}% ${!element.wronglasttime?"GREAT!":"Got wrong last time..."}`;
         htmltext+="</div>";
     })
     return htmltext+"</div>";
@@ -117,7 +119,6 @@ function addxwords(x,fromarray){
 
 function startspellings(numbertoadd = 20){
     if(numbertoadd>wordstodo.length){
-        //throw new Error("Too many words requested!");
         numbertoadd = wordstodo.length;
     }
     let totaladded = numbertoadd;
@@ -125,7 +126,7 @@ function startspellings(numbertoadd = 20){
     let neverseen = [];
     let neverright = [];
     let wronglasttime = [];
-    //lowestseen? lowpercent? todo.
+    let wordsdata = [];
     wordstodo.forEach( element => {
         if(userdata[element]===undefined){
             neverseen.push(element);
@@ -134,10 +135,10 @@ function startspellings(numbertoadd = 20){
                 neverright.push(element);
             } else {
                 const worddata = getwordscoredata(element,userdata[element]);
-                if(!worddata.rightlasttime){
+                if(worddata.wronglasttime){
                     wronglasttime.push(element);
                 } else {
-                    
+                    wordsdata.push(worddata);
                 }
             }
         }
@@ -158,7 +159,9 @@ function startspellings(numbertoadd = 20){
     }
     htmltext+=addxwords(addneverright, neverright);
 
-    //use wronglasttime //todo.
+    const datenow = Date.now();
+    console.log({wronglasttime, datenow, wordsdata});//use wronglasttime lowestseen lowpercent notseeninawhile? todo.
+
 
     if(spellwords.length<totaladded){//fill it up with anything left.
         htmltext+=addxwords(totaladded-spellwords.length, wordstodo);
@@ -257,7 +260,7 @@ function makestart(){
 
 makestart();
 window.onbeforeunload = function () {return false;}
-console.log(getscores());
+//console.log(getscores());
 
 
 //npx parcel this.html
