@@ -17,27 +17,33 @@ function getscores(){
     return scores;
 }
 
+function getwordscoredata(key, val){
+    let correct = 0;
+    let wrong = 0;
+    let rightlasttime = true;//make wronglasttime todo
+    let correcttime = 0;
+    if(val.correct!==undefined){
+        correct = val.correct.length;
+        correcttime = val.correct[val.correct.length-1];
+    }
+    if(val.wrong!==undefined){
+        wrong = val.wrong.length;
+        let wrongtime = val.wrong[val.wrong.length-1];
+        if(wrongtime>correcttime){
+            rightlasttime = false;
+        }
+    }
+    const total = correct+wrong;
+    return{ word:key, correct, wrong, total, percentage:(correct/total*100), rightlasttime };
+}
+
+
+
 function displayscoreshtml(){
     const scores = getscores();
     let scorearray = [];
     Object.entries(scores).forEach(([key, val]) => {
-        let correct = 0;
-        let wrong = 0;
-        let percentage;
-        let rightlasttime = true;
-        let correcttime = 0;
-        if(val.correct!==undefined){
-            correct = val.correct.length;
-            correcttime = val.correct[val.correct.length-1];
-        }
-        if(val.wrong!==undefined){
-            wrong = val.wrong.length;
-            let wrongtime = val.wrong[val.wrong.length-1];
-            if(wrongtime>correcttime){
-                rightlasttime = false;
-            }
-        }
-        scorearray.push({ word:key, correct, wrong, percentage:(correct/(correct+wrong)*100), rightlasttime });
+        scorearray.push(getwordscoredata(key,val));
     });
 
     //sort it, worst at top
@@ -57,7 +63,6 @@ function displayscoreshtml(){
         }
     } );
 
-
     let htmltext = "<div>";
     scorearray.forEach( element => {
         htmltext+=`<div>${element.word} `;
@@ -67,7 +72,7 @@ function displayscoreshtml(){
     return htmltext+"</div>";
 }
 
-function storeresult (storeobj, word, correct, spelling){
+function storeresult (storeobj, word, correct, spelling, Datenow){
     if(storeobj[word]===undefined || storeobj[word]===null){
         storeobj[word] = {};
     }
@@ -75,12 +80,12 @@ function storeresult (storeobj, word, correct, spelling){
         if(storeobj[word].correct===undefined){
             storeobj[word].correct = [];
         }
-        storeobj[word].correct.push(Date.now());
+        storeobj[word].correct.push(Datenow);
     } else {
         if(storeobj[word].wrong===undefined){
             storeobj[word].wrong = [];
         }
-        storeobj[word].wrong.push(Date.now());
+        storeobj[word].wrong.push(Datenow);
 
         if(storeobj[word].spellings===undefined){
             storeobj[word].spellings = {};
@@ -88,7 +93,7 @@ function storeresult (storeobj, word, correct, spelling){
         if(storeobj[word].spellings[spelling]===undefined){
             storeobj[word].spellings[spelling] = [];
         }
-        storeobj[word].spellings[spelling].push(Date.now());
+        storeobj[word].spellings[spelling].push(Datenow);
     }
 }
 
@@ -119,13 +124,21 @@ function startspellings(numbertoadd = 20){
     const userdata = getscores();
     let neverseen = [];
     let neverright = [];
-    //lowpercent? wronglasttime? todo.
+    let wronglasttime = [];
+    //lowestseen? lowpercent? todo.
     wordstodo.forEach( element => {
         if(userdata[element]===undefined){
             neverseen.push(element);
         } else {
             if(userdata[element].correct===undefined){
                 neverright.push(element);
+            } else {
+                const worddata = getwordscoredata(element,userdata[element]);
+                if(!worddata.rightlasttime){
+                    wronglasttime.push(element);
+                } else {
+                    
+                }
             }
         }
     });
@@ -145,12 +158,13 @@ function startspellings(numbertoadd = 20){
     }
     htmltext+=addxwords(addneverright, neverright);
 
+    //use wronglasttime //todo.
 
     if(spellwords.length<totaladded){//fill it up with anything left.
         htmltext+=addxwords(totaladded-spellwords.length, wordstodo);
     }
 
-    htmltext+=`<div> <button id="endbutton">END</button> </div> </div>`;
+    htmltext+=`<div><button id="endbutton">END</button></div> </div>`;
 
     let thediv = document.getElementById("rootdiv");
     thediv.innerHTML = htmltext;
@@ -186,6 +200,7 @@ function startspellings(numbertoadd = 20){
     }
 
     document.getElementById(`endbutton`).addEventListener('click', () => {
+        const Datenow = Date.now();
         let newhtmltext = "";
         let newscores = getscores();
         let score = 0;
@@ -201,15 +216,18 @@ function startspellings(numbertoadd = 20){
             if(definitelyright){
                 score++;
             }
-            storeresult(newscores,spellwords[i],definitelyright,tedsword.toLowerCase());
+            storeresult(newscores,spellwords[i],definitelyright,tedsword.toLowerCase(),Datenow);
             newhtmltext+=`<div>${spellwords[i]} - ${tedsword} - ${definitelyright?"GOOD!":" not quite.. "}</div>`;
         }
-        newhtmltext+=`<div>${score}/${totaladded} correct!<div>`;
-        newhtmltext+=`<div><button>RESTART</button><div>`;
+        newhtmltext+=`<div>${score}/${totaladded} correct!</div>`;
+        newhtmltext+=`<details><summary>Restart</summary><button id='restartbutton'>RESTART</button></details>`;
         let thedivv = document.getElementById("rootdiv");
         thedivv.innerHTML = newhtmltext;
         localStorage.setItem("tedsscores", JSON.stringify(newscores));
         console.log(newscores);
+        document.getElementById('restartbutton').addEventListener('click', async () => {
+            makestart();
+        });
     });
 
     window.speechSynthesis.cancel();
@@ -217,10 +235,13 @@ function startspellings(numbertoadd = 20){
     window.speechSynthesis.speak(speakbeast);
 }
 
+function exportsave(){
+    download(JSON.stringify(getscores()), "SpellingsUserDataBackup.json");
+}
 
 
 function makestart(){
-    document.getElementById("rootdiv").innerHTML = "<button id='startbutton'>Start!</button><button id='scorebutton'>Scores</button>";
+    document.getElementById("rootdiv").innerHTML = "<button id='startbutton'>Start!</button><details><summary>Options</summary><button id='scorebutton'>Scores</button><button id='exportbutton'>Export</button></details>";
 
     document.getElementById('startbutton').addEventListener('click', async () => {
          startspellings();
@@ -229,6 +250,9 @@ function makestart(){
         let htmlnewtext = displayscoreshtml();
         document.getElementById("rootdiv").innerHTML = htmlnewtext;
    });
+   document.getElementById('exportbutton').addEventListener('click', async () => {
+        exportsave();
+    });
 }
 
 makestart();
