@@ -102,6 +102,7 @@ function storeresult (storeobj, word, correct, spelling, Datenow){
 
 function addxwords(x,fromarray){
     let htmltext = "";
+    const startpos = spellwords.length;
     for(let i = 0;i<x;i++){
         let wordok = false;
         while(!wordok){
@@ -110,7 +111,7 @@ function addxwords(x,fromarray){
             if(!spellwords.includes(chosenword)){
                 spellwords.push(chosenword);
                 wordok = true;
-                htmltext+=`<div> <button id="speak${i}">LISTEN</button> <input type=text id="${i}" autocomplete="off" spellcheck="false"/> </div>`;
+                htmltext+=`<div> <button id="speak${i+startpos}">LISTEN</button> <input type=text id="${i+startpos}" autocomplete="off" spellcheck="false"/> </div>`;
             }
         }
     }
