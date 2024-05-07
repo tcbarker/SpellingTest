@@ -117,10 +117,20 @@ function addxwords(x,fromarray){
     return htmltext;
 }
 
+
+function addsome(howmanylefttoadd, fromwhere){
+    let addthismany = fromwhere.length<howmanylefttoadd?fromwhere.length:howmanylefttoadd;
+    let htmltext = addxwords(addthismany, fromwhere);
+    return{lefttoadd:howmanylefttoadd-addthismany, htmltext};
+}
+
+
+
 function startspellings(numbertoadd = 20){
     if(numbertoadd>wordstodo.length){
         numbertoadd = wordstodo.length;
     }
+    spellwords = [];
     let totaladded = numbertoadd;
     const userdata = getscores();
     let neverseen = [];
@@ -145,27 +155,22 @@ function startspellings(numbertoadd = 20){
     });
 
     let htmltext = "<div class='spellform'>";
+
+    let added = addsome(numbertoadd, neverseen);
+    htmltext+=added.htmltext;
+    added = addsome(added.lefttoadd, neverright);
+    htmltext+=added.htmltext;    
+    added = addsome(added.lefttoadd, wronglasttime);
+    htmltext+=added.htmltext;
     
-    let addunseen = numbertoadd;
-    if(neverseen.length<addunseen){
-        addunseen = neverseen.length;
-    }
-    htmltext+=addxwords(addunseen, neverseen);
-    const lefttoadd = numbertoadd-addunseen;
-
-    let addneverright = lefttoadd;
-    if(neverright.length<addneverright){
-        addneverright = neverright.length;
-    }
-    htmltext+=addxwords(addneverright, neverright);
-
-    const datenow = Date.now();
-    console.log({wronglasttime, datenow, wordsdata});//use wronglasttime lowestseen lowpercent notseeninawhile? todo.
+    console.log(wordsdata);
+    let leastseen = [];
+    let lowestpercents = [];
+    let oldestseen = [];
+    //make groups from wordsdata, todo.
 
 
-    if(spellwords.length<totaladded){//fill it up with anything left.
-        htmltext+=addxwords(totaladded-spellwords.length, wordstodo);
-    }
+    htmltext+=addsome(added.lefttoadd, wordstodo).htmltext;
 
     htmltext+=`<div><button id="endbutton">END</button></div> </div>`;
 
