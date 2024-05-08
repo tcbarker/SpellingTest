@@ -45,7 +45,7 @@ function getwordscoredata(key, val){
         }
     }
     const total = correct+wrong;
-    return{ word:key, correct, wrong, total, percentage:(correct/total*100), wronglasttime, lastseen };
+    return{ word:key, correct, wrong, total, percentage:(correct/total*100), wronglasttime, lastseen, spellings:val.spellings };
 }
 
 
@@ -227,7 +227,7 @@ function startspellings(numbertoadd = 20){
             const fullsentence = document.getElementById("readfullsentence")?.checked;
             const thesentence = sentencestodo[spellwords[i]];
             window.speechSynthesis.cancel();
-            speakbeast.text = spellwords[i] + (fullsentence && thesentence?". As used in the sentence: "+thesentence:"");
+            speakbeast.text = spellwords[i] + (fullsentence && thesentence?". As used in the sentence: "+thesentence+" ... "+spellwords[i]:"");
             window.speechSynthesis.speak(speakbeast);
             document.getElementById(`${i}`).focus();
         });
