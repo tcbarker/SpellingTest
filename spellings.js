@@ -1,8 +1,12 @@
 import spellings from './words.js';
+import sentence from './sentences.js';
 let wordstodo = [...new Set([...spellings.y34, ...spellings.y56])];
+let sentencestodo = sentence.y3456sentences;
 
 let spellwords = [];
 let speakbeast = new SpeechSynthesisUtterance();
+
+
 
 
 function getscores(){
@@ -155,7 +159,7 @@ function startspellings(numbertoadd = 20){
         }
     });
 
-    let htmltext = "<div class='spellform'>";
+    let htmltext = "<input type='checkbox' id='readfullsentence' checked /><label for='readfullsentence'>Give Context?</label><div class='spellform'>";
 
     let added = addsome(numbertoadd, neverseen);
     htmltext+=added.htmltext;
@@ -181,8 +185,14 @@ function startspellings(numbertoadd = 20){
     let speakfuncs = [];
     for(let i = 0;i<totaladded;i++){
         speakfuncs.push( () => {
+            const fullsentence = document.getElementById("readfullsentence")?.checked;
+            const thesentence = sentencestodo[spellwords[i]];
             window.speechSynthesis.cancel();
-            speakbeast.text = spellwords[i];
+            if(fullsentence && thesentence){
+                speakbeast.text = spellwords[i]+". As used in the sentence: "+thesentence;
+            } else {
+                speakbeast.text = spellwords[i];
+            }
             window.speechSynthesis.speak(speakbeast);
             document.getElementById(`${i}`).focus();
         });
@@ -247,7 +257,6 @@ function startspellings(numbertoadd = 20){
 function exportsave(){
     download(JSON.stringify(getscores()), "SpellingsUserDataBackup.json");
 }
-
 
 function makestart(){
     document.getElementById("rootdiv").innerHTML = "<button id='startbutton'>Start!</button><details><summary>Options</summary><button id='scorebutton'>Scores</button><button id='exportbutton'>Export</button></details>";
