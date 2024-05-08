@@ -5,7 +5,12 @@ let sentencestodo = sentence.y3456sentences;
 
 let spellwords = [];
 let speakbeast = new SpeechSynthesisUtterance();
-
+speakbeast.lang = "en-GB";
+speakbeast.pitch = 1.0;
+speakbeast.rate = 1.2;
+//const voices = window.speechSynthesis.getVoices();
+//console.log(voices);
+//speakbeast.voice = voices[555];
 
 
 
@@ -168,14 +173,48 @@ function startspellings(numbertoadd = 20){
     added = addsome(added.lefttoadd, wronglasttime);
     htmltext+=added.htmltext;
     
-    console.log(wordsdata);
-    let leastseen = [];
-    let lowestpercents = [];
-    let oldestseen = [];
-    //make groups from wordsdata, todo.
+    ////////////////////////////////////////////////////////////////
+    let leastseen = [];//total //?
+    let lowestpercents = [];//percentage //compare?
+    let oldestseen = [];//lastseen //one lot will do?
 
+    wordsdata.sort( (a,b) => {//neg = a first. i want smallest first.
+        return a.total - b.total;
+    });
+    wordsdata.forEach( element=> {
+        if(element.total === wordsdata[0].total){
+            leastseen.push(element.word);
+        }
+    })
 
-    htmltext+=addsome(added.lefttoadd, wordstodo).htmltext;
+    wordsdata.sort( (a,b) => {
+        return a.lastseen - b.lastseen;
+    });
+    wordsdata.forEach( element=> {
+        if(element.lastseen === wordsdata[0].lastseen){
+            oldestseen.push(element.word);
+        }
+    })
+
+    wordsdata.sort( (a,b) => {
+        return a.percentage - b.percentage;
+    });
+    wordsdata.forEach( element=> {
+        if(element.percentage === wordsdata[0].percentage){
+            lowestpercents.push(element.word);
+        }
+    })
+
+    let combinedminimums = [...new Set([...lowestpercents,...leastseen,...oldestseen])];
+    console.log({leastseen, lowestpercents, oldestseen, combinedminimums});
+    added = addsome(added.lefttoadd, combinedminimums);
+    htmltext+=added.htmltext;
+
+    //could then remove these words and try again?
+
+    /////////////////////////////////////////////////////////////////
+
+    htmltext+=addsome(added.lefttoadd, wordstodo).htmltext;//fill it up in case not full...
 
     htmltext+=`<div><button id="endbutton">END</button></div> </div>`;
 
@@ -188,11 +227,7 @@ function startspellings(numbertoadd = 20){
             const fullsentence = document.getElementById("readfullsentence")?.checked;
             const thesentence = sentencestodo[spellwords[i]];
             window.speechSynthesis.cancel();
-            if(fullsentence && thesentence){
-                speakbeast.text = spellwords[i]+". As used in the sentence: "+thesentence;
-            } else {
-                speakbeast.text = spellwords[i];
-            }
+            speakbeast.text = spellwords[i] + (fullsentence && thesentence?". As used in the sentence: "+thesentence:"");
             window.speechSynthesis.speak(speakbeast);
             document.getElementById(`${i}`).focus();
         });
